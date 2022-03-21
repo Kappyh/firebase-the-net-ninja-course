@@ -15,14 +15,23 @@ import {
     updateDoc
 } from "firebase/firestore"
 
+
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signOut,
+    signInWithEmailAndPassword,
+    onAuthStateChanged
+} from "firebase/auth"
+
 // salvar em um .env
 const firebaseConfig = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: process.env.API_KEY,
+    authDomain: process.env.AUTH_DOMAIN,
+    projectId: process.env.PROJECT_ID,
+    storageBucket: process.env.STORAGE_BUCKET,
+    messagingSenderId: process.env.MSS_SENDING_ID,
+    appId: process.env.APP_ID
 };
 
 // init firebase app
@@ -30,6 +39,7 @@ initializeApp(firebaseConfig);
 
 // init services
 const db = getFirestore()
+const auth =  getAuth();
 
 // collection ref
 const colRef = collection(db,'books')
@@ -50,7 +60,7 @@ const q = query(colRef, orderBy('createdAt'))
 })*/
 
 // real time data with a querie
-onSnapshot(q, (snapshot)=>{
+const unsubQueryDoc = onSnapshot(q, (snapshot)=>{
     let books = [];
     snapshot.docs.forEach((doc)=>{
         books.push({...doc.data(), id: doc.id});
@@ -59,7 +69,7 @@ onSnapshot(q, (snapshot)=>{
 })
 
 // real time data without a querie
-onSnapshot(colRef, (snapshot)=>{
+const unsubAllDoc = onSnapshot(colRef, (snapshot)=>{
     let books = [];
     snapshot.docs.forEach((doc)=>{
         books.push({...doc.data(), id: doc.id});
@@ -104,7 +114,7 @@ const docRef = doc(db, 'books', '1I2zYQbyoYYqamc1xiC4');
     console.log(doc.data(), doc.id);
 })*/
 
-onSnapshot(docRef, (doc)=>{
+const unsubDocRef =  onSnapshot(docRef, (doc)=>{
     console.log(doc.data(), doc.id)
 })
 
@@ -121,4 +131,69 @@ updateForm.addEventListener('submit', (e)=>{
     }).catch(err=>{
         console.error(err.message)
     })
+})
+
+// firebase auth create user
+
+const signupForm = document.querySelector('.signup')
+signupForm.addEventListener('submit', (e) => {
+    e.preventDefault()
+
+    const email = signupForm.email.value
+    const password = signupForm.password.value
+
+    createUserWithEmailAndPassword(auth, email, password)
+        .then(cred => {
+            console.log('user created:', cred.user)
+            signupForm.reset()
+        })
+        .catch(err => {
+            console.log(err.message)
+        })
+})
+
+// Login and logout
+const logoutButton = document.querySelector('.logout')
+logoutButton.addEventListener('click', () => {
+    signOut(auth)
+        .then(() => {
+            console.log('user signed out')
+        })
+        .catch(err => {
+            console.log(err.message)
+        })
+})
+
+const loginForm = document.querySelector('.login')
+loginForm.addEventListener('submit', (e) => {
+    e.preventDefault()
+
+    const email = loginForm.email.value
+    const password = loginForm.password.value
+
+    signInWithEmailAndPassword(auth, email, password)
+        .then(cred => {
+            console.log('user logged in:', cred.user)
+            loginForm.reset()
+        })
+        .catch(err => {
+            console.log(err.message)
+        })
+})
+
+// Subscribe User (listener for changes in the user status)
+const unsubAuth = onAuthStateChanged(auth, (user)=>{
+    console.log('user status changed: ', user)
+})
+
+// Unsubscribring
+
+const unsubButton = document.querySelector('.unsub')
+unsubButton.addEventListener('click',(e)=>{
+    e.preventDefault();
+    console.log('unsubscribing...');
+    unsubAllDoc();
+    unsubAuth();
+    unsubDocRef();
+    unsubQueryDoc();
 })

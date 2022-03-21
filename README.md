@@ -20,6 +20,10 @@ const firebaseConfig = {
 };
 ````
 
+OR
+This project suport env configuration, checkout the file .env-example,
+include just the values for the firabase variables.
+
 Run the project
 
 ```
